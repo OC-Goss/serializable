@@ -168,14 +168,14 @@ function serializable.unserialize(stream, readSize)
     end
 
     local f, err = load(getChunk)
-    -- take care to garbage collect the loaded strings before attempting to run the loaded function
-    buf = nil
-    -- utils.freeMemory() -- TODO: think about how to handle this for small tables
     if f then
         local ok, res = pcall(f)
-        -- garbage collect the function which returned deserialized table as we only care about the table itself
-        f = nil
-        -- utils.freeMemory() -- TODO: think about how to handle this for small tables
+        if not ok then
+            -- garbage collect the loaded strings if running the loaded function failed and rerun
+            buf = nil
+            utils.freeMemory()
+            ok, res = pcall(f)
+        end
         if ok then
             return res
         else
